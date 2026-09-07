@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Video, Copy, Check, Trash2, ExternalLink, Clock, Play } from "lucide-react";
 import type { ClipRecord } from "../../types";
@@ -30,7 +30,8 @@ function ClipCardRoot({ clip, children }: { clip: ClipRecord; children: React.Re
 
 function ClipCardThumbnail({ onPreview }: { onPreview?: () => void }) {
   const { clip } = useClipCard();
-  const thumbSrc = clip.thumbnailPath ? convertFileSrc(clip.thumbnailPath) : null;
+  const [imgError, setImgError] = useState(false);
+  const thumbSrc = clip.thumbnailPath && !imgError ? convertFileSrc(clip.thumbnailPath) : null;
 
   return (
     <div
@@ -41,6 +42,7 @@ function ClipCardThumbnail({ onPreview }: { onPreview?: () => void }) {
         <img
           src={thumbSrc}
           alt="Thumbnail"
+          onError={() => setImgError(true)}
           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
         />
       ) : (
