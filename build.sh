@@ -6,8 +6,11 @@ VERSION="1.0.0"
 PKG_DIR="${DIR}/build/quick-rec_${VERSION}_all"
 DIST_DIR="${DIR}/dist"
 
-echo "==> Building quick-rec version ${VERSION}..."
+echo "==> Building Frontend & Tauri Release Binary..."
+bun run build
+cd src-tauri && cargo build --release && cd ..
 
+echo "==> Packaging quick-rec version ${VERSION}..."
 rm -rf "${PKG_DIR}"
 mkdir -p "${PKG_DIR}/DEBIAN"
 mkdir -p "${PKG_DIR}/usr/bin"
@@ -18,8 +21,9 @@ mkdir -p "${DIST_DIR}"
 # Copy files
 cp "${DIR}/debian/control" "${PKG_DIR}/DEBIAN/"
 cp "${DIR}/debian/postinst" "${PKG_DIR}/DEBIAN/"
-cp "${DIR}/src/quick-rec" "${PKG_DIR}/usr/bin/"
-cp "${DIR}/src/quick-rec-overlay" "${PKG_DIR}/usr/bin/"
+cp "${DIR}/src-tauri/target/release/quick-rec" "${PKG_DIR}/usr/bin/"
+strip "${PKG_DIR}/usr/bin/quick-rec" || true
+cp "${DIR}/scripts/quick-rec-overlay" "${PKG_DIR}/usr/bin/" || true
 cp "${DIR}/data/quick-rec.desktop" "${PKG_DIR}/usr/share/applications/"
 cp "${DIR}/data/quick-rec.svg" "${PKG_DIR}/usr/share/icons/hicolor/scalable/apps/"
 

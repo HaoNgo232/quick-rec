@@ -1,7 +1,16 @@
+# Build & Dist
 build/
 dist/
 *.deb
+src-tauri/target/
+
+# Node & Frontend
+node_modules/
+bun.lock
+
+# Cache & Temporary
 *.pyc
 __pycache__/
 *.mp4
 .DS_Store
+*.db
