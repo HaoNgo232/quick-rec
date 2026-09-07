@@ -31,13 +31,18 @@ Toggle with a single shortcut, see a glowing red highlight box around the record
 
 ## 🚀 Installation
 
-Run this single batch command to clone, build, install, and configure the shortcut automatically:
+Run this one-line batch command to automatically install dependencies, build, and configure the shortcut:
 
+```bash
+curl -fsSL https://raw.githubusercontent.com/HaoNgo232/quick-rec/main/install.sh | bash
+```
+
+*Or if you prefer cloning the repository manually:*
 ```bash
 git clone https://github.com/HaoNgo232/quick-rec.git && cd quick-rec && ./install.sh
 ```
 
-*`./install.sh` automatically installs system dependencies (`ffmpeg`, `slop`, `xclip`, etc.), builds the Debian package, installs it via `apt`, and registers the `Super + Shift + R` shortcut.*
+*The installer automatically installs system dependencies (`ffmpeg`, `slop`, `xclip`, etc.), builds the Debian package, installs it via `apt`, and registers the `Super + Shift + R` shortcut.*
 
 ---
 

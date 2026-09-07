@@ -1,6 +1,16 @@
 #!/bin/bash
 set -e
 
+# Support running directly via: curl -fsSL https://.../install.sh | bash
+if [ -z "${BASH_SOURCE[0]}" ] || [ ! -f "${BASH_SOURCE[0]}" ]; then
+    TMP_DIR=$(mktemp -d /tmp/quick-rec-XXXXXX)
+    echo "==> Cloning quick-rec repository..."
+    git clone --depth 1 https://github.com/HaoNgo232/quick-rec.git "$TMP_DIR"
+    (cd "$TMP_DIR" && ./install.sh)
+    rm -rf "$TMP_DIR"
+    exit 0
+fi
+
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VERSION="1.0.0"
 DEB_FILE="${DIR}/dist/quick-rec_${VERSION}_all.deb"
