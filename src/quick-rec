@@ -40,7 +40,6 @@ if [ -f "$PIDFILE" ]; then
         if [ -f "$FILE" ]; then
             echo -n "$FILE" | xclip -selection clipboard
             [ -f "$SOUND_STOP" ] && paplay "$SOUND_STOP" >/dev/null 2>&1 &
-            notify-send -h string:transient:true -t 2000 -i quick-rec "✅ Đã lưu video" "Path đã copy vào Clipboard"
         fi
     fi
 else
