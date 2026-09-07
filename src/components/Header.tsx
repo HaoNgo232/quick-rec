@@ -37,19 +37,21 @@ export function Header() {
       {/* Record CTA Button */}
       <button
         onClick={actions.toggleRecord}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm ${
+        className={`relative isolate flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm select-none ${
           state.isRecording
-            ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 animate-pulse"
-            : "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40"
+            ? "bg-red-600 hover:bg-red-700 text-white border border-red-500 animate-pulse"
+            : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
         }`}
       >
-        <div
+        <span
           className={`w-2 h-2 rounded-full ${
-            state.isRecording ? "bg-amber-400" : "bg-red-500"
+            state.isRecording ? "bg-white" : "bg-red-500"
           }`}
         />
-        {state.isRecording ? "Recording... (Click to stop)" : "Record Region"}
-        <kbd className="ml-1 px-1 py-0.2 text-[10px] bg-zinc-900/60 rounded text-zinc-400 font-mono">
+        <span key={state.isRecording ? "rec-active" : "rec-idle"}>
+          {state.isRecording ? "Stop Recording" : "Record Region"}
+        </span>
+        <kbd className="ml-1 px-1 py-0.5 text-[10px] bg-black/40 rounded text-zinc-300 font-mono">
           Super+Shift+R
         </kbd>
       </button>

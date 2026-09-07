@@ -74,11 +74,26 @@ fn handle_toggle_record(
         let _ = Deskboard::copy_path(&path_str);
         let _ = vault.save(&path_str, duration_ms, rect.width, rect.height, file_size);
         let _ = app.emit("recordings-updated", ());
+
+        if let Some(win) = app.get_webview_window("main") {
+            let _ = win.show();
+            let _ = win.set_focus();
+        }
         Ok(false)
     } else {
+        if let Some(win) = app.get_webview_window("main") {
+            let _ = win.hide();
+        }
+
         let rect = match Recorder::pick_region().map_err(|e| e.to_string())? {
             Some(r) => r,
-            None => return Ok(false),
+            None => {
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.show();
+                    let _ = win.set_focus();
+                }
+                return Ok(false);
+            }
         };
 
         let video_dir = dirs::video_dir().unwrap_or_else(|| {

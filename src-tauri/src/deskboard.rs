@@ -6,8 +6,29 @@ pub struct Deskboard;
 
 impl Deskboard {
     pub fn copy_path(path: &str) -> Result<()> {
-        let mut clipboard = Clipboard::new()?;
-        clipboard.set_text(path.to_string())?;
+        #[cfg(target_os = "linux")]
+        {
+            use std::io::Write;
+            for sel in &["clipboard", "primary"] {
+                if let Ok(mut child) = Command::new("xclip")
+                    .arg("-selection")
+                    .arg(sel)
+                    .stdin(std::process::Stdio::piped())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .spawn()
+                {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        let _ = stdin.write_all(path.as_bytes());
+                    }
+                }
+            }
+        }
+
+        if let Ok(mut clipboard) = Clipboard::new() {
+            let _ = clipboard.set_text(path.to_string());
+        }
+
         Ok(())
     }
 
