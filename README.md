@@ -3,8 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20X11-orange.svg)](#)
 
-A minimal, blazingly fast screen region recorder for Linux (Linux Mint, Ubuntu, Debian).
-Toggle with a single shortcut, see a glowing red highlight box around the recorded area, and have the video path copied directly to your clipboard the moment you stop.
+A minimal, blazingly fast screen region recorder with a built-in History Vault for Linux (Linux Mint, Ubuntu, Debian).
+Toggle with a single shortcut, see a glowing red highlight box around the recorded area, have the video path copied directly to your clipboard the moment you stop, and manage all your clips in the History Vault.
 
 ---
 
@@ -12,6 +12,8 @@ Toggle with a single shortcut, see a glowing red highlight box around the record
 
 - ⚡ **Instant 1-Hotkey Recording**: Press once to select area and start recording, press again to stop.
 - 📋 **Auto Clipboard Path**: Video path is automatically copied to your clipboard on finish (`Ctrl + V` to paste anywhere).
+- 🗄️ **History Vault**: Modern dark-themed vault with video preview thumbnails, 1-click path copy, search filtering, and built-in video player.
+- 🔄 **Auto Hide & Focus**: The Vault window automatically hides while you select and record your region, and smoothly re-opens with your new clip when finished.
 - 🔴 **Visual Highlight Border**: Clean 3px red bounding box framing the recorded area (visible on screen, but **never appears in the output MP4 video**).
 - ⏱️ **Floating REC Badge**: A non-intrusive floating pill showing live recording duration (`REC 00:05`) and a clickable `[ ⏹ Stop ]` button.
 - 🖱️ **Click-Through Support**: The entire recorded region is click-through — interact with your browser, editor, or terminal with zero interference.
@@ -23,38 +25,29 @@ Toggle with a single shortcut, see a glowing red highlight box around the record
 ## 📦 Requirements
 
 - Linux with **X11** desktop session (Linux Mint Cinnamon, Ubuntu Xorg, Debian, etc.).
-- Packages: `ffmpeg`, `slop`, `xclip`, `python3`, `python3-gi`, `python3-cairo`.
+- Base tools: `git`, `curl` (the installer automatically handles the rest).
 
 ---
 
 ## 🚀 Installation
 
-### Option 1: Automatic Installer (Recommended)
+Run this single batch command to clone, build, install, and configure the shortcut automatically:
 
-Clone the repository and run:
 ```bash
-git clone https://github.com/your-username/quick-rec.git
-cd quick-rec
-./install.sh
+git clone https://github.com/HaoNgo232/quick-rec.git && cd quick-rec && ./install.sh
 ```
-*`install.sh` builds the `.deb` package, installs dependencies via `apt`, and registers the `Super + Shift + R` shortcut.*
 
-### Option 2: Build and Install with Make
-```bash
-make
-sudo apt install ./dist/quick-rec_1.0.0_all.deb
-```
+*`./install.sh` automatically installs system dependencies (`ffmpeg`, `slop`, `xclip`, etc.), builds the Debian package, installs it via `apt`, and registers the `Super + Shift + R` shortcut.*
 
 ---
 
-## ⌨️ Default Shortcut
+## ⌨️ Default Shortcut & Usage
 
-| Action | Shortcut |
+| Action | Shortcut / Control |
 |---|---|
 | **Toggle Record / Stop** | <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> (Windows + Shift + R) |
 | **Stop Recording** | Click the floating **⏹ Stop** button OR press the shortcut again |
-
-*You can also launch it directly from the Application Menu by searching for **"Quay màn hình nhanh"** or **"Quick Screen Recorder"**.*
+| **Open History Vault** | Search for **"Quick Screen Recorder"** in the Application Menu OR click the System Tray icon |
 
 ---
 
