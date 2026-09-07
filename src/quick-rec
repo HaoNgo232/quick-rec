@@ -1,0 +1,102 @@
+#!/bin/bash
+
+# Quick Screen Recorder (quick-rec)
+# Lightweight screen region recorder with GTK overlay and hotkey toggle.
+
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}"
+PIDFILE="${RUNTIME_DIR}/quick_rec_${UID}.pid"
+INFOFILE="${RUNTIME_DIR}/quick_rec_${UID}.info"
+OVERLAY_PIDFILE="${RUNTIME_DIR}/quick_rec_${UID}.overlay.pid"
+
+SOUND_START="/usr/share/sounds/freedesktop/stereo/screen-capture.oga"
+SOUND_STOP="/usr/share/sounds/freedesktop/stereo/complete.oga"
+OVERLAY_SCRIPT="/usr/bin/quick-rec-overlay"
+[ ! -x "$OVERLAY_SCRIPT" ] && OVERLAY_SCRIPT="$(dirname "$(readlink -f "$0")")/quick-rec-overlay"
+
+if [ -f "$PIDFILE" ]; then
+    # --- DỪNG QUAY (STOP RECORDING) ---
+
+    # 1. Đóng khung viền highlight
+    OPID=$(cat "$OVERLAY_PIDFILE" 2>/dev/null)
+    if [ -n "$OPID" ] && kill -0 "$OPID" 2>/dev/null; then
+        kill -TERM "$OPID" 2>/dev/null
+    fi
+    rm -f "$OVERLAY_PIDFILE"
+
+    # 2. Dừng ffmpeg và đợi ghi xong metadata MP4
+    PID=$(cat "$PIDFILE" 2>/dev/null)
+    if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+        kill -INT "$PID"
+        while kill -0 "$PID" 2>/dev/null; do
+            sleep 0.1
+        done
+    fi
+    rm -f "$PIDFILE"
+
+    # 3. Copy đường dẫn video vào clipboard và phát âm thanh
+    if [ -f "$INFOFILE" ]; then
+        FILE=$(cat "$INFOFILE")
+        rm -f "$INFOFILE"
+        if [ -f "$FILE" ]; then
+            echo -n "$FILE" | xclip -selection clipboard
+            [ -f "$SOUND_STOP" ] && paplay "$SOUND_STOP" >/dev/null 2>&1 &
+            notify-send -t 4000 -i quick-rec "✅ ĐÃ DỪNG & LƯU VIDEO" "Path đã copy vào Clipboard:\n$FILE"
+        fi
+    fi
+else
+    # --- BẮT ĐẦU QUAY (START RECORDING) ---
+
+    # Kiểm tra loại phiên hiển thị (Session type)
+    if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
+        notify-send -u critical -i dialog-error "Quick Rec" "Wayland hiện chưa được hỗ trợ bởi x11grab. Vui lòng sử dụng phiên X11."
+        exit 1
+    fi
+
+    # Kiểm tra các dependency cần thiết
+    for cmd in slop ffmpeg xclip; do
+        if ! command -v "$cmd" &>/dev/null; then
+            notify-send -u critical -i dialog-error "Quick Rec" "Thiếu $cmd! Vui lòng chạy: sudo apt install -y $cmd"
+            exit 1
+        fi
+    done
+
+    # Xác định thư mục Videos chuẩn XDG
+    VIDEOS_DIR="$(xdg-user-dir VIDEOS 2>/dev/null)"
+    [ -z "$VIDEOS_DIR" ] && VIDEOS_DIR="$HOME/Videos"
+    mkdir -p "$VIDEOS_DIR"
+
+    # Chọn vùng màn hình bằng chuột (ESC để huỷ)
+    GEO=$(slop -f "%x %y %w %h" --nodecorations 2>/dev/null)
+    [ -z "$GEO" ] && exit 0
+
+    read -r X Y W H <<< "$GEO"
+
+    # libx264 yêu cầu kích thước chiều rộng và chiều cao phải là số chẵn
+    W=$(( W - W % 2 ))
+    H=$(( H - H % 2 ))
+
+    if [ "$W" -lt 10 ] || [ "$H" -lt 10 ]; then
+        exit 0
+    fi
+
+    FILE="${VIDEOS_DIR}/clip_$(date +%Y%m%d_%H%M%S).mp4"
+
+    # Ghi lại màn hình với ffmpeg:
+    # - draw_mouse 1: kèm con trỏ chuột
+    # - pix_fmt yuv420p: tương thích hoàn toàn khi chia sẻ
+    ffmpeg -y -f x11grab -draw_mouse 1 -video_size "${W}x${H}" -i "${DISPLAY:-:0.0}+${X},${Y}" \
+        -c:v libx264 -preset ultrafast -pix_fmt yuv420p "$FILE" >/dev/null 2>&1 &
+
+    REC_PID=$!
+    echo "$REC_PID" > "$PIDFILE"
+    echo "$FILE" > "$INFOFILE"
+
+    # Khởi chạy overlay hiển thị viền đỏ và badge trạng thái REC
+    if [ -x "$OVERLAY_SCRIPT" ]; then
+        "$OVERLAY_SCRIPT" "$X" "$Y" "$W" "$H" "$REC_PID" >/dev/null 2>&1 &
+        echo $! > "$OVERLAY_PIDFILE"
+    fi
+
+    [ -f "$SOUND_START" ] && paplay "$SOUND_START" >/dev/null 2>&1 &
+    notify-send -t 3000 -i quick-rec "🔴 ĐANG QUAY MÀN HÌNH..." "Bấm lại phím tắt hoặc nút [⏹ Dừng quay] để kết thúc"
+fi

@@ -1,0 +1,7 @@
+build/
+dist/
+*.deb
+*.pyc
+__pycache__/
+*.mp4
+.DS_Store

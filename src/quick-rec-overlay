@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+import sys
+import os
+import subprocess
+import signal
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('PangoCairo', '1.0')
+from gi.repository import Gtk, Gdk, GLib, Pango, PangoCairo
+import cairo
+
+class RecordingOverlay(Gtk.Window):
+    def __init__(self, x, y, w, h, ffmpeg_pid=None):
+        super().__init__(type=Gtk.WindowType.POPUP)
+        
+        self.area_x = x
+        self.area_y = y
+        self.area_w = w
+        self.area_h = h
+        self.ffmpeg_pid = ffmpeg_pid
+        
+        self.border_width = 3
+        self.badge_w = 230
+        self.badge_h = 30
+        self.spacing = 4
+        
+        if self.area_y >= self.badge_h + self.spacing + self.border_width:
+            self.win_x = self.area_x - self.border_width
+            self.win_y = self.area_y - self.border_width - self.badge_h - self.spacing
+            self.badge_x = 0
+            self.badge_y = 0
+            self.frame_x = 0
+            self.frame_y = self.badge_h + self.spacing
+        else:
+            self.win_x = self.area_x - self.border_width
+            self.win_y = self.area_y - self.border_width
+            self.frame_x = 0
+            self.frame_y = 0
+            self.badge_x = 0
+            self.badge_y = self.area_h + 2 * self.border_width + self.spacing
+
+        self.win_w = max(self.area_w + 2 * self.border_width, self.badge_w)
+        self.win_h = self.area_h + 2 * self.border_width + self.badge_h + self.spacing
+        
+        self.set_app_paintable(True)
+        screen = self.get_screen()
+        visual = screen.get_rgba_visual()
+        if visual:
+            self.set_visual(visual)
+            
+        self.set_keep_above(True)
+        self.set_skip_taskbar_hint(True)
+        self.set_skip_pager_hint(True)
+        self.set_accept_focus(False)
+        self.set_type_hint(Gdk.WindowTypeHint.NOTIFICATION)
+        
+        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.connect("draw", self.on_draw)
+        self.connect("button-press-event", self.on_click)
+        
+        self.seconds = 0
+        self.blink_state = True
+        
+        self.realize()
+        self.move(self.win_x, self.win_y)
+        self.resize(self.win_w, self.win_h)
+        
+        gdk_win = self.get_window()
+        badge_region = cairo.Region(cairo.RectangleInt(
+            int(self.badge_x), int(self.badge_y), int(self.badge_w), int(self.badge_h)
+        ))
+        gdk_win.input_shape_combine_region(badge_region, 0, 0)
+        
+        GLib.timeout_add_seconds(1, self.on_timer_tick)
+        GLib.timeout_add(500, self.check_ffmpeg)
+        
+    def check_ffmpeg(self):
+        if self.ffmpeg_pid:
+            try:
+                os.kill(self.ffmpeg_pid, 0)
+            except OSError:
+                Gtk.main_quit()
+                return False
+        return True
+
+    def on_timer_tick(self):
+        self.seconds += 1
+        self.blink_state = not self.blink_state
+        self.queue_draw()
+        return True
+
+    def on_click(self, widget, event):
+        if event.button == 1:
+            cmd = "/usr/bin/quick-rec" if os.path.exists("/usr/bin/quick-rec") else os.path.expanduser("~/quay-nhanh.sh")
+            try:
+                subprocess.Popen([cmd])
+            except Exception:
+                pass
+            return True
+        return False
+
+    def on_draw(self, widget, cr):
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_source_rgba(0, 0, 0, 0)
+        cr.paint()
+        cr.set_operator(cairo.OPERATOR_OVER)
+        
+        cr.set_source_rgba(0.94, 0.2, 0.2, 0.95)
+        cr.set_line_width(self.border_width)
+        fx = self.frame_x + self.border_width / 2.0
+        fy = self.frame_y + self.border_width / 2.0
+        fw = self.area_w + self.border_width
+        fh = self.area_h + self.border_width
+        cr.rectangle(fx, fy, fw, fh)
+        cr.stroke()
+        
+        bx = self.badge_x
+        by = self.badge_y
+        bw = self.badge_w
+        bh = self.badge_h
+        radius = 6.0
+        
+        cr.new_sub_path()
+        cr.arc(bx + bw - radius, by + radius, radius, -1.570796, 0)
+        cr.arc(bx + bw - radius, by + bh - radius, radius, 0, 1.570796)
+        cr.arc(bx + radius, by + bh - radius, radius, 1.570796, 3.141592)
+        cr.arc(bx + radius, by + radius, radius, 3.141592, 4.712388)
+        cr.close_path()
+        
+        cr.set_source_rgba(0.1, 0.1, 0.12, 0.92)
+        cr.fill_preserve()
+        cr.set_source_rgba(0.94, 0.2, 0.2, 0.9)
+        cr.set_line_width(1.5)
+        cr.stroke()
+        
+        if self.blink_state:
+            cr.set_source_rgba(0.94, 0.2, 0.2, 1.0)
+        else:
+            cr.set_source_rgba(0.5, 0.1, 0.1, 0.6)
+        cr.arc(bx + 14, by + bh / 2.0, 4.5, 0, 6.283185)
+        cr.fill()
+        
+        mins = self.seconds // 60
+        secs = self.seconds % 60
+        time_str = f"REC {mins:02d}:{secs:02d}"
+        
+        layout = self.create_pango_layout()
+        layout.set_markup(f"<span font='Sans Bold 9' color='white'>{time_str}</span>  <span color='#888888'>│</span>  <span font='Sans Bold 9' color='#ff6b6b'>⏹ Dừng quay</span>")
+        
+        cr.move_to(bx + 26, by + 6)
+        PangoCairo.show_layout(cr, layout)
+        
+        return False
+
+def main():
+    if len(sys.argv) < 5:
+        sys.exit(1)
+    x = int(sys.argv[1])
+    y = int(sys.argv[2])
+    w = int(sys.argv[3])
+    h = int(sys.argv[4])
+    ffmpeg_pid = int(sys.argv[5]) if len(sys.argv) > 5 else None
+    
+    signal.signal(signal.SIGTERM, lambda *args: Gtk.main_quit())
+    signal.signal(signal.SIGINT, lambda *args: Gtk.main_quit())
+    
+    overlay = RecordingOverlay(x, y, w, h, ffmpeg_pid)
+    overlay.show_all()
+    Gtk.main()
+
+if __name__ == "__main__":
+    main()

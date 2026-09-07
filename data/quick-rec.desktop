@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Quay màn hình nhanh
+Name[en]=Quick Screen Recorder
+Comment=Quay video màn hình theo vùng chọn (Phím tắt Super+Shift+R)
+Exec=/usr/bin/quick-rec
+Icon=quick-rec
+Terminal=false
+Type=Application
+Categories=Utility;AudioVideo;Recorder;
+Keywords=screen;recorder;quay;video;slop;ffmpeg;capture;
+StartupNotify=false
