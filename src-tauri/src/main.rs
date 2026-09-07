@@ -97,9 +97,10 @@ fn handle_toggle_record(
             }
         };
 
-        let video_dir = dirs::video_dir().unwrap_or_else(|| {
-            dirs::home_dir().map(|h| h.join("Videos")).unwrap_or_default()
-        });
+        let video_dir = dirs::video_dir()
+            .unwrap_or_else(|| dirs::home_dir().map(|h| h.join("Videos")).unwrap_or_default())
+            .join("quick-rec");
+        let _ = std::fs::create_dir_all(&video_dir);
         let filename = format!("clip_{}.mp4", chrono::Local::now().format("%Y%m%d_%H%M%S"));
         let output_file = video_dir.join(filename);
 

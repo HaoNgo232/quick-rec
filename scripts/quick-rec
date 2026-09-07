@@ -59,9 +59,10 @@ else
         fi
     done
 
-    # Xác định thư mục Videos chuẩn XDG
+    # Determine Videos/quick-rec directory
     VIDEOS_DIR="$(xdg-user-dir VIDEOS 2>/dev/null)"
     [ -z "$VIDEOS_DIR" ] && VIDEOS_DIR="$HOME/Videos"
+    VIDEOS_DIR="${VIDEOS_DIR}/quick-rec"
     mkdir -p "$VIDEOS_DIR"
 
     # Chọn vùng màn hình bằng chuột (ESC để huỷ)
