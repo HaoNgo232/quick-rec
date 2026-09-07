@@ -16,6 +16,7 @@ mkdir -p "${PKG_DIR}/DEBIAN"
 mkdir -p "${PKG_DIR}/usr/bin"
 mkdir -p "${PKG_DIR}/usr/share/applications"
 mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/scalable/apps"
+rm -rf "${DIST_DIR}"
 mkdir -p "${DIST_DIR}"
 
 # Copy files
