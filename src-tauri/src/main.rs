@@ -3,6 +3,9 @@
 use quick_rec_lib::deskboard::Deskboard;
 use quick_rec_lib::recorder::Recorder;
 use quick_rec_lib::vault::{ClipRecord, Vault};
+use std::io::{Read, Write};
+use std::os::unix::net::{UnixListener, UnixStream};
+use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
@@ -93,6 +96,20 @@ fn handle_toggle_record(
 }
 
 fn main() {
+    let runtime_dir = dirs::runtime_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
+    let sock_path = runtime_dir.join(format!("quick-rec-{}.sock", unsafe { libc::getuid() }));
+
+    // 1. Single Instance Check via Unix Domain Socket
+    if let Ok(mut stream) = UnixStream::connect(&sock_path) {
+        let is_toggle = std::env::args().any(|a| a == "--toggle");
+        let msg = if is_toggle { "toggle\n" } else { "show\n" };
+        let _ = stream.write_all(msg.as_bytes());
+        return;
+    }
+
+    let _ = std::fs::remove_file(&sock_path);
+    let listener = UnixListener::bind(&sock_path).expect("Failed to bind unix domain socket");
+
     let data_dir = dirs::data_dir()
         .map(|d| d.join("quick-rec"))
         .unwrap_or_else(|| dirs::home_dir().unwrap().join(".quick-rec"));
@@ -107,6 +124,9 @@ fn main() {
         vault: vault.clone(),
     };
 
+    let recorder_sock = recorder.clone();
+    let vault_sock = vault.clone();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .manage(state)
@@ -119,7 +139,29 @@ fn main() {
             toggle_record
         ])
         .setup(move |app| {
-            // 1. Setup System Tray
+            let app_handle = app.handle().clone();
+
+            // 2. Spawn Socket Listener for single-instance commands
+            std::thread::spawn(move || {
+                for stream in listener.incoming() {
+                    if let Ok(mut s) = stream {
+                        let mut buf = [0u8; 32];
+                        if let Ok(n) = s.read(&mut buf) {
+                            let cmd = String::from_utf8_lossy(&buf[..n]);
+                            if cmd.starts_with("toggle") {
+                                let _ = handle_toggle_record(&app_handle, &recorder_sock, &vault_sock);
+                            } else if cmd.starts_with("show") {
+                                if let Some(win) = app_handle.get_webview_window("main") {
+                                    let _ = win.show();
+                                    let _ = win.set_focus();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 3. Setup System Tray
             let toggle_item = MenuItem::with_id(app, "toggle_rec", "Quay màn hình (Super+Shift+R)", true, None::<&str>)?;
             let history_item = MenuItem::with_id(app, "open_history", "Lịch sử quay (History Vault)", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Thoát Quick Rec", true, None::<&str>)?;
@@ -167,17 +209,17 @@ fn main() {
                 })
                 .build(app)?;
 
-            // 2. Register Global Shortcut: Super+Shift+R
+            // 4. Register Global Shortcut: Super+Shift+R
             let shortcut = "Super+Shift+R".parse::<Shortcut>().expect("Invalid shortcut format");
-            let app_handle = app.handle().clone();
-            let recorder_clone = recorder.clone();
-            let vault_clone = vault.clone();
+            let app_handle_sc = app.handle().clone();
+            let recorder_sc = recorder.clone();
+            let vault_sc = vault.clone();
 
-            app.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, _event| {
-                let _ = handle_toggle_record(&app_handle, &recorder_clone, &vault_clone);
-            })?;
+            let _ = app.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, _event| {
+                let _ = handle_toggle_record(&app_handle_sc, &recorder_sc, &vault_sc);
+            });
 
-            // 3. Intercept main window close event so it minimizes to tray instead of quitting
+            // 5. Intercept main window close event so it minimizes to tray instead of quitting
             if let Some(win) = app.get_webview_window("main") {
                 let win_clone = win.clone();
                 win.on_window_event(move |event| {
@@ -186,6 +228,9 @@ fn main() {
                         let _ = win_clone.hide();
                     }
                 });
+                // Ensure window is shown on initial launch
+                let _ = win.show();
+                let _ = win.set_focus();
             }
 
             Ok(())

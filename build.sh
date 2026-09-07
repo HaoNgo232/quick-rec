@@ -6,9 +6,8 @@ VERSION="1.0.0"
 PKG_DIR="${DIR}/build/quick-rec_${VERSION}_all"
 DIST_DIR="${DIR}/dist"
 
-echo "==> Building Frontend & Tauri Release Binary..."
-bun run build
-cd src-tauri && cargo build --release && cd ..
+echo "==> Building Frontend & Tauri Release Binary with Tauri CLI..."
+bunx tauri build --no-bundle
 
 echo "==> Packaging quick-rec version ${VERSION}..."
 rm -rf "${PKG_DIR}"
