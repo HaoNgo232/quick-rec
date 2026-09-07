@@ -58,12 +58,47 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchRecords();
 
-    const unlistenPromise = listen("recordings-updated", () => {
+    const handleFocusOrVisible = () => {
       fetchRecords();
+    };
+
+    window.addEventListener("focus", handleFocusOrVisible);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchRecords();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    let unlistenUpdated: (() => void) | undefined;
+    let unlistenStatus: (() => void) | undefined;
+
+    listen("recordings-updated", () => {
+      fetchRecords();
+    }).then((unlisten) => {
+      unlistenUpdated = unlisten;
     });
 
+    listen<boolean>("recording-status-changed", (event) => {
+      setIsRecording(event.payload);
+      fetchRecords();
+    }).then((unlisten) => {
+      unlistenStatus = unlisten;
+    });
+
+    // Fallback sync every 2 seconds when visible
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchRecords();
+      }
+    }, 2000);
+
     return () => {
-      unlistenPromise.then((unlisten) => unlisten());
+      window.removeEventListener("focus", handleFocusOrVisible);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(interval);
+      if (unlistenUpdated) unlistenUpdated();
+      if (unlistenStatus) unlistenStatus();
     };
   }, []);
 

@@ -73,12 +73,13 @@ fn handle_toggle_record(
         let path_str = output_file.to_string_lossy().to_string();
         let _ = Deskboard::copy_path(&path_str);
         let _ = vault.save(&path_str, duration_ms, rect.width, rect.height, file_size);
-        let _ = app.emit("recordings-updated", ());
-
         if let Some(win) = app.get_webview_window("main") {
             let _ = win.show();
             let _ = win.set_focus();
         }
+
+        let _ = app.emit("recording-status-changed", false);
+        let _ = app.emit("recordings-updated", ());
         Ok(false)
     } else {
         if let Some(win) = app.get_webview_window("main") {
@@ -106,6 +107,7 @@ fn handle_toggle_record(
             .start(rect, &output_file)
             .map_err(|e| e.to_string())?;
         Deskboard::play_sound_start();
+        let _ = app.emit("recording-status-changed", true);
         Ok(true)
     }
 }
