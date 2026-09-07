@@ -2604,6 +2604,7 @@ dependencies = [
  "chrono",
  "crossbeam-channel",
  "dirs 5.0.1",
+ "image",
  "libc",
  "rusqlite",
  "serde",

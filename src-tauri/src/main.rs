@@ -126,9 +126,15 @@ fn main() {
 
             let tray_menu = Menu::with_items(app, &[&toggle_item, &history_item, &quit_item])?;
 
+            let img = image::load_from_memory(include_bytes!("../icons/32x32.png"))
+                .expect("Failed to load 32x32 tray icon");
+            let rgba = img.to_rgba8();
+            let (width, height) = rgba.dimensions();
+            let tray_icon = tauri::image::Image::new_owned(rgba.into_raw(), width, height);
+
             let _tray = TrayIconBuilder::new()
                 .menu(&tray_menu)
-                .icon(app.default_window_icon().unwrap().clone())
+                .icon(tray_icon)
                 .tooltip("Quick Screen Recorder")
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "toggle_rec" => {
