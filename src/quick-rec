@@ -40,7 +40,7 @@ if [ -f "$PIDFILE" ]; then
         if [ -f "$FILE" ]; then
             echo -n "$FILE" | xclip -selection clipboard
             [ -f "$SOUND_STOP" ] && paplay "$SOUND_STOP" >/dev/null 2>&1 &
-            notify-send -t 4000 -i quick-rec "✅ ĐÃ DỪNG & LƯU VIDEO" "Path đã copy vào Clipboard:\n$FILE"
+            notify-send -h string:transient:true -t 2000 -i quick-rec "✅ Đã lưu video" "Path đã copy vào Clipboard"
         fi
     fi
 else
@@ -98,5 +98,4 @@ else
     fi
 
     [ -f "$SOUND_START" ] && paplay "$SOUND_START" >/dev/null 2>&1 &
-    notify-send -t 3000 -i quick-rec "🔴 ĐANG QUAY MÀN HÌNH..." "Bấm lại phím tắt hoặc nút [⏹ Dừng quay] để kết thúc"
 fi
