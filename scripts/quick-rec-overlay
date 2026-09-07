@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
+import shutil
 import subprocess
 import signal
 import gi
@@ -91,11 +92,22 @@ class RecordingOverlay(Gtk.Window):
 
     def on_click(self, widget, event):
         if event.button == 1:
-            cmd = "/usr/bin/quick-rec" if os.path.exists("/usr/bin/quick-rec") else os.path.expanduser("~/quay-nhanh.sh")
-            try:
-                subprocess.Popen([cmd])
-            except Exception:
-                pass
+            quick_rec = shutil.which("quick-rec") or "/usr/bin/quick-rec"
+            if not os.path.exists(quick_rec):
+                quick_rec = os.path.expanduser("~/.local/bin/quick-rec")
+            
+            if os.path.exists(quick_rec):
+                try:
+                    subprocess.Popen([quick_rec, "--toggle"])
+                    return True
+                except Exception:
+                    pass
+
+            if self.ffmpeg_pid:
+                try:
+                    os.kill(self.ffmpeg_pid, signal.SIGINT)
+                except OSError:
+                    pass
             return True
         return False
 

@@ -124,8 +124,11 @@ fn main() {
         vault: vault.clone(),
     };
 
+    let is_toggle = std::env::args().any(|a| a == "--toggle");
     let recorder_sock = recorder.clone();
     let vault_sock = vault.clone();
+    let recorder_init = recorder.clone();
+    let vault_init = vault.clone();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -228,9 +231,16 @@ fn main() {
                         let _ = win_clone.hide();
                     }
                 });
-                // Ensure window is shown on initial launch
-                let _ = win.show();
-                let _ = win.set_focus();
+                // Ensure window is shown only on normal launch, or toggle record if launched with --toggle
+                if is_toggle {
+                    let app_handle_init = app.handle().clone();
+                    std::thread::spawn(move || {
+                        let _ = handle_toggle_record(&app_handle_init, &recorder_init, &vault_init);
+                    });
+                } else {
+                    let _ = win.show();
+                    let _ = win.set_focus();
+                }
             }
 
             Ok(())

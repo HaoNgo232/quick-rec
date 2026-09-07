@@ -173,23 +173,24 @@ impl Recorder {
 
         // Spawn visual overlay if present
         let overlay_process = {
-            let overlay_bin = dirs::home_dir().map(|h| h.join(".local/bin/rec-overlay.py"));
+            let candidates = [
+                dirs::home_dir().map(|h| h.join(".local/bin/quick-rec-overlay")),
+                dirs::home_dir().map(|h| h.join(".local/bin/rec-overlay.py")),
+                Some(PathBuf::from("/usr/bin/quick-rec-overlay")),
+            ];
+            let overlay_bin = candidates.into_iter().flatten().find(|p| p.exists());
             if let Some(bin) = overlay_bin {
-                if bin.exists() {
-                    Command::new("python3")
-                        .arg(bin)
-                        .arg(rect.x.to_string())
-                        .arg(rect.y.to_string())
-                        .arg(rect.width.to_string())
-                        .arg(rect.height.to_string())
-                        .arg(pid.to_string())
-                        .stdout(std::process::Stdio::null())
-                        .stderr(std::process::Stdio::null())
-                        .spawn()
-                        .ok()
-                } else {
-                    None
-                }
+                Command::new("python3")
+                    .arg(bin)
+                    .arg(rect.x.to_string())
+                    .arg(rect.y.to_string())
+                    .arg(rect.width.to_string())
+                    .arg(rect.height.to_string())
+                    .arg(pid.to_string())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .spawn()
+                    .ok()
             } else {
                 None
             }
