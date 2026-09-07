@@ -12,13 +12,13 @@ export function VaultGrid() {
         <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-3">
           <Sparkles className="w-5 h-5 text-zinc-500" />
         </div>
-        <p className="text-sm font-medium text-zinc-300">Chưa có clip nào trong Vault</p>
+        <p className="text-sm font-medium text-zinc-300">No clips in Vault</p>
         <p className="text-xs text-zinc-500 mt-1 max-w-sm">
-          Bấm phím tắt{" "}
+          Press{" "}
           <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[11px]">
             Super + Shift + R
           </kbd>{" "}
-          để chọn vùng và quay clip đầu tiên!
+          to select a region and record your first clip!
         </p>
       </div>
     );

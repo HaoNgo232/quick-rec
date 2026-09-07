@@ -26,10 +26,10 @@ export function Header() {
           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             type="text"
-            placeholder="Tìm kiếm video..."
             value={state.searchQuery}
             onChange={(e) => actions.setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-zinc-900 border border-zinc-800 placeholder-zinc-500 focus:outline-none focus:border-red-500/60 transition"
+            placeholder="Search recordings..."
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 transition-colors"
           />
         </div>
       </div>
@@ -37,18 +37,18 @@ export function Header() {
       {/* Record CTA Button */}
       <button
         onClick={actions.toggleRecord}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm ${
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm ${
           state.isRecording
-            ? "bg-red-600 text-white hover:bg-red-700 animate-pulse"
-            : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
+            ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 animate-pulse"
+            : "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40"
         }`}
       >
-        <span
+        <div
           className={`w-2 h-2 rounded-full ${
-            state.isRecording ? "bg-white" : "bg-red-500"
+            state.isRecording ? "bg-amber-400" : "bg-red-500"
           }`}
         />
-        {state.isRecording ? "Đang quay... (Bấm dừng)" : "Quay ngay"}
+        {state.isRecording ? "Recording... (Click to stop)" : "Record Region"}
         <kbd className="ml-1 px-1 py-0.2 text-[10px] bg-zinc-900/60 rounded text-zinc-400 font-mono">
           Super+Shift+R
         </kbd>

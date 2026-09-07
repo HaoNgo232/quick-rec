@@ -1,11 +1,11 @@
 [Desktop Entry]
-Name=Quay màn hình nhanh (Quick Rec)
-Name[en]=Quay màn hình nhanh (Quick Rec)
-Comment=Quay video màn hình theo vùng chọn và quản lý Vault (Super+Shift+R)
+Name=Quick Screen Recorder
+Name[en]=Quick Screen Recorder
+Comment=Record screen region with hotkey Super+Shift+R & manage Vault
 Exec=/usr/bin/quick-rec
 Icon=quick-rec
 Terminal=false
 Type=Application
 Categories=Utility;AudioVideo;Recorder;
-Keywords=screen;recorder;quay;video;slop;ffmpeg;capture;vault;
+Keywords=screen;recorder;capture;region;slop;ffmpeg;vault;video;
 StartupNotify=false

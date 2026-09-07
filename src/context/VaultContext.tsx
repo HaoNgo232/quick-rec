@@ -95,7 +95,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteRecord = async (id: number) => {
-    if (!confirm("Bạn có chắc muốn xoá video này không?")) return;
+    if (!confirm("Are you sure you want to delete this recording?")) return;
     try {
       await invoke("delete_record", { id, removeFile: true });
       setRecords((prev) => prev.filter((r) => r.id !== id));

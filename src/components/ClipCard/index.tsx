@@ -46,7 +46,7 @@ function ClipCardThumbnail({ onPreview }: { onPreview?: () => void }) {
       ) : (
         <div className="flex flex-col items-center text-zinc-600">
           <Video className="w-6 h-6 mb-1" />
-          <span className="text-[10px] font-mono">Không có ảnh</span>
+          <span className="text-[10px] font-mono">No thumbnail</span>
         </div>
       )}
 
@@ -133,7 +133,7 @@ function ClipCardCopyButton() {
       {isCopied ? (
         <>
           <Check className="w-3.5 h-3.5" />
-          <span>Đã copy!</span>
+          <span>Copied!</span>
         </>
       ) : (
         <>
@@ -152,7 +152,7 @@ function ClipCardOpenButton() {
   return (
     <button
       onClick={() => actions.openFile(clip)}
-      title="Mở video bằng trình phát hệ thống"
+      title="Open with default media player"
       className="p-1.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700/40 transition"
     >
       <ExternalLink className="w-3.5 h-3.5" />
@@ -167,7 +167,7 @@ function ClipCardDeleteButton() {
   return (
     <button
       onClick={() => actions.deleteRecord(clip.id)}
-      title="Xoá video"
+      title="Delete recording"
       className="p-1.5 rounded-lg bg-zinc-800/60 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 border border-zinc-700/40 transition"
     >
       <Trash2 className="w-3.5 h-3.5" />

@@ -45,16 +45,16 @@ if [ -f "$PIDFILE" ]; then
 else
     # --- BẮT ĐẦU QUAY (START RECORDING) ---
 
-    # Kiểm tra loại phiên hiển thị (Session type)
+    # Check session type
     if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
-        notify-send -u critical -i dialog-error "Quick Rec" "Wayland hiện chưa được hỗ trợ bởi x11grab. Vui lòng sử dụng phiên X11."
+        notify-send -u critical -i dialog-error "Quick Rec" "Wayland is not supported yet by x11grab. Please use an X11 session."
         exit 1
     fi
 
-    # Kiểm tra các dependency cần thiết
+    # Check dependencies
     for cmd in slop ffmpeg xclip; do
         if ! command -v "$cmd" &>/dev/null; then
-            notify-send -u critical -i dialog-error "Quick Rec" "Thiếu $cmd! Vui lòng chạy: sudo apt install -y $cmd"
+            notify-send -u critical -i dialog-error "Quick Rec" "Missing $cmd! Please run: sudo apt install -y $cmd"
             exit 1
         fi
     done

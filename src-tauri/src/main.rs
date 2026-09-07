@@ -162,9 +162,9 @@ fn main() {
             });
 
             // 3. Setup System Tray
-            let toggle_item = MenuItem::with_id(app, "toggle_rec", "Quay màn hình (Super+Shift+R)", true, None::<&str>)?;
-            let history_item = MenuItem::with_id(app, "open_history", "Lịch sử quay (History Vault)", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "Thoát Quick Rec", true, None::<&str>)?;
+            let toggle_item = MenuItem::with_id(app, "toggle_rec", "Record Region (Super+Shift+R)", true, None::<&str>)?;
+            let history_item = MenuItem::with_id(app, "open_history", "History Vault", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quit Quick Rec", true, None::<&str>)?;
 
             let tray_menu = Menu::with_items(app, &[&toggle_item, &history_item, &quit_item])?;
 

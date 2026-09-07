@@ -145,7 +145,7 @@ class RecordingOverlay(Gtk.Window):
         time_str = f"REC {mins:02d}:{secs:02d}"
         
         layout = self.create_pango_layout()
-        layout.set_markup(f"<span font='Sans Bold 9' color='white'>{time_str}</span>  <span color='#888888'>│</span>  <span font='Sans Bold 9' color='#ff6b6b'>⏹ Dừng quay</span>")
+        layout.set_markup(f"<span font='Sans Bold 9' color='white'>{time_str}</span>  <span color='#888888'>│</span>  <span font='Sans Bold 9' color='#ff6b6b'>⏹ Stop</span>")
         
         cr.move_to(bx + 26, by + 6)
         PangoCairo.show_layout(cr, layout)
