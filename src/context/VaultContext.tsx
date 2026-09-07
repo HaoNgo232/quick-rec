@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { formatBytes } from "../utils/format";
 import type { ClipRecord } from "../types";
 
 export interface VaultState {
@@ -10,6 +11,7 @@ export interface VaultState {
   isRecording: boolean;
   copiedId: number | null;
   previewClip: ClipRecord | null;
+  totalSizeBytes: number;
 }
 
 export interface VaultActions {
@@ -18,6 +20,7 @@ export interface VaultActions {
   copyPath: (clip: ClipRecord) => Promise<void>;
   openFile: (clip: ClipRecord) => Promise<void>;
   deleteRecord: (id: number) => Promise<void>;
+  clearVault: () => Promise<void>;
   setPreviewClip: (clip: ClipRecord | null) => void;
   fetchRecords: () => Promise<void>;
 }
@@ -140,6 +143,29 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const totalSizeBytes = useMemo(() => {
+    return records.reduce((acc, r) => acc + (r.fileSizeBytes || 0), 0);
+  }, [records]);
+
+  const clearVault = async () => {
+    if (records.length === 0) return;
+    const formattedSize = formatBytes(totalSizeBytes);
+    const confirmed = confirm(
+      `Are you sure you want to delete all ${records.length} recording${
+        records.length > 1 ? "s" : ""
+      } and free up ${formattedSize} of disk space?\n\nThis cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await invoke("clear_vault", { removeFiles: true });
+      setRecords([]);
+      setPreviewClip(null);
+    } catch (err) {
+      console.error("Clear vault failed:", err);
+    }
+  };
+
   const filteredRecords = useMemo(() => {
     if (!searchQuery.trim()) return records;
     const q = searchQuery.toLowerCase();
@@ -158,6 +184,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
       isRecording,
       copiedId,
       previewClip,
+      totalSizeBytes,
     },
     actions: {
       setSearchQuery,
@@ -165,6 +192,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
       copyPath,
       openFile,
       deleteRecord,
+      clearVault,
       setPreviewClip,
       fetchRecords,
     },

@@ -160,6 +160,34 @@ impl Vault {
         Ok(())
     }
 
+    pub fn clear_all(&self, remove_files: bool) -> Result<u64> {
+        let conn = self.conn.lock().unwrap();
+        let mut freed_bytes: u64 = 0;
+
+        if remove_files {
+            let mut stmt = conn.prepare("SELECT file_path, thumbnail_path, file_size_bytes FROM records")?;
+            let rows = stmt.query_map([], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, Option<String>>(1)?,
+                    row.get::<_, i64>(2)? as u64,
+                ))
+            })?;
+
+            for r in rows.flatten() {
+                let (video_p, thumb_p, size) = r;
+                let _ = std::fs::remove_file(Path::new(&video_p));
+                if let Some(t) = thumb_p {
+                    let _ = std::fs::remove_file(Path::new(&t));
+                }
+                freed_bytes += size;
+            }
+        }
+
+        conn.execute("DELETE FROM records", [])?;
+        Ok(freed_bytes)
+    }
+
     fn extract_thumbnail(video_path: &Path, thumb_path: &Path) -> Result<()> {
         let status = Command::new("ffmpeg")
             .arg("-y")
@@ -234,5 +262,32 @@ mod tests {
         vault.delete(rec.id, false).unwrap();
         let records = vault.list(10, 0).unwrap();
         assert_eq!(records.len(), 0);
+    }
+
+    #[test]
+    fn test_vault_clear_all() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test_clear.db");
+        let thumb_dir = dir.path().join("thumbs");
+
+        let vault = Vault::new(&db_path, &thumb_dir).unwrap();
+
+        let clip1 = dir.path().join("clip1.mp4");
+        let clip2 = dir.path().join("clip2.mp4");
+        std::fs::write(&clip1, b"content1").unwrap();
+        std::fs::write(&clip2, b"content2").unwrap();
+
+        vault.save(&clip1.to_string_lossy(), 1000, 1920, 1080, 500).unwrap();
+        vault.save(&clip2.to_string_lossy(), 2000, 1920, 1080, 500).unwrap();
+
+        assert_eq!(vault.list(10, 0).unwrap().len(), 2);
+        assert!(clip1.exists());
+        assert!(clip2.exists());
+
+        let freed = vault.clear_all(true).unwrap();
+        assert_eq!(freed, 1000);
+        assert_eq!(vault.list(10, 0).unwrap().len(), 0);
+        assert!(!clip1.exists());
+        assert!(!clip2.exists());
     }
 }

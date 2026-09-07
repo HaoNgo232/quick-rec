@@ -1,5 +1,6 @@
-import { Video, Search } from "lucide-react";
+import { Video, Search, Trash2 } from "lucide-react";
 import { useVault } from "../context/VaultContext";
+import { formatBytes } from "../utils/format";
 
 export function Header() {
   const { state, actions } = useVault();
@@ -34,27 +35,44 @@ export function Header() {
         </div>
       </div>
 
-      {/* Record CTA Button */}
-      <button
-        onClick={actions.toggleRecord}
-        className={`relative isolate flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm select-none ${
-          state.isRecording
-            ? "bg-red-600 hover:bg-red-700 text-white border border-red-500 animate-pulse"
-            : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
-        }`}
-      >
-        <span
-          className={`w-2 h-2 rounded-full ${
-            state.isRecording ? "bg-white" : "bg-red-500"
+      {/* Action Buttons */}
+      <div className="flex items-center gap-2">
+        {state.records.length > 0 && (
+          <button
+            onClick={actions.clearVault}
+            title={`Delete all recordings and free up ${formatBytes(state.totalSizeBytes)}`}
+            className="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-zinc-800 hover:border-red-500/30 transition shadow-sm select-none"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-zinc-400 group-hover:text-red-400 transition-colors" />
+            <span>Clear All</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 group-hover:bg-red-950/60 text-zinc-400 group-hover:text-red-300 border border-zinc-700/50 group-hover:border-red-900/50 transition-colors">
+              {formatBytes(state.totalSizeBytes)}
+            </span>
+          </button>
+        )}
+
+        {/* Record CTA Button */}
+        <button
+          onClick={actions.toggleRecord}
+          className={`relative isolate flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm select-none ${
+            state.isRecording
+              ? "bg-red-600 hover:bg-red-700 text-white border border-red-500 animate-pulse"
+              : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
           }`}
-        />
-        <span key={state.isRecording ? "rec-active" : "rec-idle"}>
-          {state.isRecording ? "Stop Recording" : "Record Region"}
-        </span>
-        <kbd className="ml-1 px-1 py-0.5 text-[10px] bg-black/40 rounded text-zinc-300 font-mono">
-          Super+Shift+R
-        </kbd>
-      </button>
+        >
+          <span
+            className={`w-2 h-2 rounded-full ${
+              state.isRecording ? "bg-white" : "bg-red-500"
+            }`}
+          />
+          <span key={state.isRecording ? "rec-active" : "rec-idle"}>
+            {state.isRecording ? "Stop Recording" : "Record Region"}
+          </span>
+          <kbd className="ml-1 px-1 py-0.5 text-[10px] bg-black/40 rounded text-zinc-300 font-mono">
+            Super+Shift+R
+          </kbd>
+        </button>
+      </div>
     </header>
   );
 }

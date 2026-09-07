@@ -3,6 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { Video, Copy, Check, Trash2, ExternalLink, Clock, Play } from "lucide-react";
 import type { ClipRecord } from "../../types";
 import { useVault } from "../../context/VaultContext";
+import { formatBytes, formatDate } from "../../utils/format";
 
 interface ClipCardContextValue {
   clip: ClipRecord;
@@ -77,25 +78,6 @@ function ClipCardDuration() {
       {timeStr}
     </span>
   );
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr.replace(" ", "T") + "Z");
-    return (
-      d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
-      " • " +
-      d.toLocaleDateString([], { month: "short", day: "numeric" })
-    );
-  } catch {
-    return dateStr;
-  }
 }
 
 function ClipCardMeta() {

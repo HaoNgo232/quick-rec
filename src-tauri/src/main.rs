@@ -38,6 +38,14 @@ fn delete_record(state: State<AppState>, id: i64, remove_file: Option<bool>) -> 
 }
 
 #[tauri::command]
+fn clear_vault(state: State<AppState>, remove_files: Option<bool>) -> Result<u64, String> {
+    state
+        .vault
+        .clear_all(remove_files.unwrap_or(true))
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn copy_path(path: String) -> Result<(), String> {
     Deskboard::copy_path(&path).map_err(|e| e.to_string())
 }
@@ -160,6 +168,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             list_records,
             delete_record,
+            clear_vault,
             copy_path,
             open_file,
             is_recording,
