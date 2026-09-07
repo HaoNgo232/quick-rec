@@ -57,6 +57,12 @@ fn is_recording(state: State<AppState>) -> bool {
 }
 
 #[tauri::command]
+fn get_video_data(path: String) -> Result<tauri::ipc::Response, String> {
+    let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
+    Ok(tauri::ipc::Response::new(bytes))
+}
+
+#[tauri::command]
 fn toggle_record(app: AppHandle, state: State<AppState>) -> Result<bool, String> {
     handle_toggle_record(&app, &state.recorder, &state.vault)
 }
@@ -157,7 +163,8 @@ fn main() {
             copy_path,
             open_file,
             is_recording,
-            toggle_record
+            toggle_record,
+            get_video_data
         ])
         .setup(move |app| {
             let app_handle = app.handle().clone();
