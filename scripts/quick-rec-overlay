@@ -29,59 +29,83 @@ class RecordingOverlay(Gtk.Window):
         self.spacing = 8
         self.corner_len = min(22, max(10, self.area_w // 8), max(10, self.area_h // 8))
         
-        # Screen geometry detection for anti-overflow clamping
+        # Query monitor geometry using Gdk
         display = Gdk.Display.get_default()
-        screen_x, screen_y, screen_w, screen_h = 0, 0, 1920, 1080
-        if display:
-            monitor = display.get_primary_monitor() or (display.get_monitor(0) if display.get_n_monitors() > 0 else None)
-            if monitor:
-                geom = monitor.get_geometry()
-                screen_x, screen_y = geom.x, geom.y
-                screen_w, screen_h = geom.width, geom.height
+        monitor = display.get_primary_monitor() or display.get_monitor(0)
+        geom = monitor.get_geometry()
+        screen_w = geom.width
+        screen_h = geom.height
 
-        area_total_w = self.area_w + 2 * self.border_width
-        area_total_h = self.area_h + 2 * self.border_width
+        # Detect if region is full-height or covers screen edges (when no room above or below without overflowing)
+        has_room_above = self.area_y >= self.badge_h + self.spacing + self.border_width
+        has_room_below = (self.area_y + self.area_h + 2 * self.border_width + self.spacing + self.badge_h) <= screen_h
+        is_edge_covered = (
+            (self.area_y <= 0 and self.area_h >= screen_h - 40) or
+            (self.area_y + self.area_h >= screen_h - 20 and self.area_y <= 40)
+        )
+        self.is_inset = is_edge_covered or (not has_room_above and not has_room_below)
 
-        # Calculate horizontal centering for badge relative to area
-        if area_total_w >= self.badge_w:
-            self.win_x = self.area_x - self.border_width
-            self.badge_x = (area_total_w - self.badge_w) // 2
+        if self.is_inset:
+            # Inset Mode: Place HUD badge inside recording area at Top-Center
+            self.win_x = max(0, self.area_x)
+            self.win_y = max(0, self.area_y)
+            self.win_w = self.area_w
+            self.win_h = self.area_h
             self.frame_x = 0
-            self.win_w = area_total_w
-        else:
-            diff = self.badge_w - area_total_w
-            self.win_x = self.area_x - self.border_width - (diff // 2)
-            self.badge_x = 0
-            self.frame_x = diff // 2
-            self.win_w = self.badge_w
-
-        # Check available vertical space outside the recording region
-        req_space = self.badge_h + self.spacing + self.border_width
-        space_above = (self.area_y - self.border_width) - screen_y
-        space_below = (screen_y + screen_h) - (self.area_y + self.area_h + self.border_width)
-
-        if space_above >= req_space:
-            # Outset Mode Above
-            self.win_y = self.area_y - self.border_width - self.badge_h - self.spacing
-            self.badge_y = 0
-            self.frame_y = self.badge_h + self.spacing
-            self.win_h = area_total_h + self.badge_h + self.spacing
-        elif space_below >= req_space:
-            # Outset Mode Below
-            self.win_y = self.area_y - self.border_width
             self.frame_y = 0
-            self.badge_y = area_total_h + self.spacing
-            self.win_h = area_total_h + self.badge_h + self.spacing
+            self.badge_x = max(0, (self.area_w - self.badge_w) // 2)
+            self.badge_y = 14
         else:
-            # Dynamic Inset Mode (Fullscreen or edge-to-edge captures)
-            # Anchor HUD at Top-Center inside the recording region with safe margin
-            self.win_y = max(screen_y, self.area_y - self.border_width)
-            self.frame_y = 0
-            self.badge_y = 12  # 12px from top edge
-            self.win_h = area_total_h
+            # Outset Mode: Badge positioned outside recording area (above or below)
+            area_total_w = self.area_w + 2 * self.border_width
+            if area_total_w >= self.badge_w:
+                self.win_x = self.area_x - self.border_width
+                self.badge_x = (area_total_w - self.badge_w) // 2
+                self.frame_x = 0
+                self.win_w = area_total_w
+            else:
+                diff = self.badge_w - area_total_w
+                self.win_x = self.area_x - self.border_width - (diff // 2)
+                self.badge_x = 0
+                self.frame_x = diff // 2
+                self.win_w = self.badge_w
 
-        # Strict viewport boundary clamping
-        self.win_x = max(screen_x, min(self.win_x, screen_x + screen_w - self.win_w))
+            if self.area_y >= self.badge_h + self.spacing + self.border_width:
+                self.win_y = self.area_y - self.border_width - self.badge_h - self.spacing
+                self.badge_y = 0
+                self.frame_y = self.badge_h + self.spacing
+            else:
+                self.win_y = self.area_y - self.border_width
+                self.frame_y = 0
+                self.badge_y = self.area_h + 2 * self.border_width + self.spacing
+
+            self.win_h = self.area_h + 2 * self.border_width + self.badge_h + self.spacing
+
+        # Global safety clamp: ensure the window and badge are ALWAYS clamped
+        # so badge_y and the entire badge remain strictly visible inside [0, screen_h - badge_h]
+        screen_badge_y = self.win_y + self.badge_y
+        if screen_badge_y < 0:
+            self.badge_y += (0 - screen_badge_y)
+        elif screen_badge_y > screen_h - self.badge_h:
+            overflow = screen_badge_y - (screen_h - self.badge_h)
+            if self.badge_y >= overflow:
+                self.badge_y -= overflow
+            else:
+                self.badge_y = 0
+                self.win_y = max(0, screen_h - self.badge_h)
+
+        # Safety clamp for badge_x inside [0, screen_w - badge_w]
+        screen_badge_x = self.win_x + self.badge_x
+        if screen_badge_x < 0:
+            self.badge_x += (0 - screen_badge_x)
+        elif screen_badge_x > screen_w - self.badge_w:
+            overflow_x = screen_badge_x - (screen_w - self.badge_w)
+            if self.badge_x >= overflow_x:
+                self.badge_x -= overflow_x
+            else:
+                self.badge_x = 0
+                self.win_x = max(0, screen_w - self.badge_w)
+
         
         # GTK Window Setup
         self.set_app_paintable(True)
@@ -211,10 +235,16 @@ class RecordingOverlay(Gtk.Window):
         cr.set_operator(cairo.OPERATOR_OVER)
         
         # 1. VIEW FINDER RECORDING FRAME
-        fx = self.frame_x + self.border_width / 2.0
-        fy = self.frame_y + self.border_width / 2.0
-        fw = self.area_w + self.border_width
-        fh = self.area_h + self.border_width
+        if self.is_inset:
+            fx = 1.5
+            fy = 1.5
+            fw = self.area_w - 3.0
+            fh = self.area_h - 3.0
+        else:
+            fx = self.frame_x + self.border_width / 2.0
+            fy = self.frame_y + self.border_width / 2.0
+            fw = self.area_w + self.border_width
+            fh = self.area_h + self.border_width
         
         # 1a. Thin precision hairline boundary
         cr.set_source_rgba(0.94, 0.25, 0.25, 0.65)
