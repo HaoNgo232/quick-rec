@@ -60,6 +60,25 @@ fn open_file(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn reveal_file_in_folder(path: String) -> Result<(), String> {
+    let file_path = std::path::Path::new(&path);
+    #[cfg(target_os = "linux")]
+    {
+        if let Some(parent) = file_path.parent() {
+            let _ = std::process::Command::new("xdg-open").arg(parent).spawn();
+        }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("explorer")
+            .arg(format!("/select,\"{}\"", path))
+            .spawn();
+    }
+    Ok(())
+}
+
+
+#[tauri::command]
 fn is_recording(state: State<AppState>) -> bool {
     state.recorder.is_recording()
 }
@@ -103,6 +122,7 @@ fn handle_toggle_record(
         let rect = match Recorder::pick_region().map_err(|e| e.to_string())? {
             Some(r) => r,
             None => {
+                let _ = app.emit("recording-canceled", ());
                 if let Some(win) = app.get_webview_window("main") {
                     let _ = win.show();
                     let _ = win.set_focus();
@@ -171,6 +191,7 @@ fn main() {
             clear_vault,
             copy_path,
             open_file,
+            reveal_file_in_folder,
             is_recording,
             toggle_record,
             get_video_data
