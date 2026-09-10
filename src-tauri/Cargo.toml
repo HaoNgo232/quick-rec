@@ -1,7 +1,7 @@
 [package]
 name = "quick-rec"
 version = "1.0.0"
-description = "Quick Screen Region Recorder for Linux & Windows"
+description = "Quick Screen Recorder for Linux & Windows"
 authors = ["Hao <hao@local>"]
 edition = "2021"
 

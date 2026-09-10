@@ -9,8 +9,32 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Listener, Manager, State};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+
+fn update_tray_state(app: &AppHandle, is_recording: bool) {
+    if let Some(tray) = app.tray_by_id("main-tray") {
+        let (icon_bytes, tooltip) = if is_recording {
+            (
+                include_bytes!("../icons/32x32_recording.png").as_slice(),
+                "Quick Screen Recorder (Recording in progress...)",
+            )
+        } else {
+            (
+                include_bytes!("../icons/32x32.png").as_slice(),
+                "Quick Screen Recorder",
+            )
+        };
+
+        if let Ok(img) = image::load_from_memory(icon_bytes) {
+            let rgba = img.to_rgba8();
+            let (width, height) = rgba.dimensions();
+            let tray_icon = tauri::image::Image::new_owned(rgba.into_raw(), width, height);
+            let _ = tray.set_icon(Some(tray_icon));
+        }
+        let _ = tray.set_tooltip(Some(tooltip));
+    }
+}
 
 pub struct AppState {
     pub recorder: Arc<Recorder>,
@@ -107,6 +131,7 @@ fn stop_recording(
     let (output_file, duration_ms, rect, file_size) =
         recorder.stop().map_err(|e| e.to_string())?;
     Deskboard::play_sound_stop();
+    update_tray_state(app, false);
     let path_str = output_file.to_string_lossy().to_string();
     let _ = Deskboard::copy_path(&path_str);
     let _ = vault.save(&path_str, duration_ms, rect.width, rect.height, file_size);
@@ -136,6 +161,7 @@ fn handle_toggle_record(
             Some(r) => r,
             None => {
                 let _ = app.emit("recording-canceled", ());
+                update_tray_state(app, false);
                 if let Some(win) = app.get_webview_window("main") {
                     let _ = win.show();
                     let _ = win.set_focus();
@@ -155,6 +181,7 @@ fn handle_toggle_record(
             .start(rect, &output_file)
             .map_err(|e| e.to_string())?;
         Deskboard::play_sound_start();
+        update_tray_state(app, true);
         let _ = app.emit("recording-status-changed", true);
         Ok(true)
     }
@@ -191,6 +218,7 @@ fn handle_toggle_record_fullscreen(
             .start(rect, &output_file)
             .map_err(|e| e.to_string())?;
         Deskboard::play_sound_start();
+        update_tray_state(app, true);
         let _ = app.emit("recording-status-changed", true);
         Ok(true)
     }
@@ -292,7 +320,7 @@ fn main() {
             let (width, height) = rgba.dimensions();
             let tray_icon = tauri::image::Image::new_owned(rgba.into_raw(), width, height);
 
-            let _tray = TrayIconBuilder::new()
+            let _tray = TrayIconBuilder::with_id("main-tray")
                 .menu(&tray_menu)
                 .icon(tray_icon)
                 .tooltip("Quick Screen Recorder")
@@ -330,6 +358,13 @@ fn main() {
                     }
                 })
                 .build(app)?;
+
+            let app_handle_for_tray = app.handle().clone();
+            app.listen("recording-status-changed", move |event| {
+                if let Ok(is_rec) = serde_json::from_str::<bool>(event.payload()) {
+                    update_tray_state(&app_handle_for_tray, is_rec);
+                }
+            });
 
             // 4. Register Global Shortcuts: Super+Shift+R & Super+Shift+F
             let shortcut_r = "Super+Shift+R".parse::<Shortcut>().expect("Invalid shortcut format");
