@@ -36,7 +36,7 @@ export function Header() {
             <button
               onClick={() => actions.setSearchQuery("")}
               aria-label="Clear search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200 p-0.5 rounded hover:bg-zinc-800 transition"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 p-0.5 rounded bg-zinc-800 hover:bg-zinc-700 transition relative isolate"
             >
               <X className="w-3.5 h-3.5" />
             </button>

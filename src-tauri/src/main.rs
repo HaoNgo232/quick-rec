@@ -71,7 +71,7 @@ fn reveal_file_in_folder(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         let _ = std::process::Command::new("explorer")
-            .arg(format!("/select,\"{}\"", path))
+            .arg(format!("/select,{}", path))
             .spawn();
     }
     Ok(())

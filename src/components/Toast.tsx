@@ -10,11 +10,11 @@ export function Toast() {
   return (
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-200 animate-in fade-in slide-in-from-bottom-2">
       <div className="bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-lg px-4 py-2.5 shadow-xl flex items-center gap-3 text-xs">
-        <span className="font-medium">{toast.message}</span>
+        <span key={toast.id} className="font-medium">{toast.message}</span>
         {toast.actionLabel && toast.onAction && (
           <button
             onClick={toast.onAction}
-            className="font-bold text-amber-400 hover:text-amber-300 hover:underline transition-colors ml-1"
+            className="relative isolate px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 font-bold text-amber-400 hover:text-amber-300 transition-colors ml-1 select-none"
           >
             {toast.actionLabel}
           </button>
@@ -22,7 +22,7 @@ export function Toast() {
         <button
           onClick={actions.dismissToast}
           aria-label="Dismiss notification"
-          className="text-zinc-400 hover:text-zinc-200 ml-1 p-0.5 rounded hover:bg-zinc-800 transition"
+          className="relative isolate text-zinc-400 hover:text-zinc-200 ml-1 p-1 rounded bg-zinc-800 hover:bg-zinc-700 transition"
         >
           <X className="w-3.5 h-3.5" />
         </button>

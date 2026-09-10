@@ -243,21 +243,25 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
 
     pendingDeletesRef.current.set(id, { timer, clip: clipToDelete });
 
+    const count = pendingDeletesRef.current.size;
+    const message = count > 1 ? `${count} recordings deleted` : "Recording deleted";
+
     showToast(
       {
-        message: "Recording deleted",
+        message,
         actionLabel: "Undo",
         onAction: () => {
-          const pending = pendingDeletesRef.current.get(id);
-          if (pending) {
-            clearTimeout(pending.timer);
-            pendingDeletesRef.current.delete(id);
-            setRecords((prev) => {
-              if (prev.some((r) => r.id === id)) return prev;
-              const updated = [pending.clip, ...prev];
-              return updated.sort((a, b) => b.id - a.id);
-            });
-          }
+          const restored: ClipRecord[] = [];
+          pendingDeletesRef.current.forEach(({ timer, clip }) => {
+            clearTimeout(timer);
+            restored.push(clip);
+          });
+          pendingDeletesRef.current.clear();
+          setRecords((prev) => {
+            const existingIds = new Set(prev.map((r) => r.id));
+            const newClips = restored.filter((c) => !existingIds.has(c.id));
+            return [...newClips, ...prev].sort((a, b) => b.id - a.id);
+          });
           dismissToast();
         },
       },

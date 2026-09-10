@@ -47,10 +47,14 @@ export function PreviewModal() {
       if (e.key === "Escape") {
         actions.setPreviewClip(null);
       } else if (e.key === " " || e.code === "Space") {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === "BUTTON" || target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
+          return;
+        }
         e.preventDefault();
-        if (videoRef.current) {
+        if (!loading && videoRef.current && videoUrl) {
           if (videoRef.current.paused) {
-            videoRef.current.play();
+            videoRef.current.play().catch(() => {});
           } else {
             videoRef.current.pause();
           }
@@ -62,11 +66,11 @@ export function PreviewModal() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [clip, actions]);
+  }, [clip, actions, loading, videoUrl]);
 
   if (!clip) return null;
 
-  const filename = clip.filePath.split("/").pop() || clip.filePath;
+  const filename = clip.filePath.split(/[/\\]/).pop() || clip.filePath;
 
   const handleRevealInFolder = async () => {
     try {

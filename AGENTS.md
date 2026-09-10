@@ -28,7 +28,7 @@ Quick Rec is a minimal, fast region screen recorder with a built-in History Vaul
 
 - **Frontend Typecheck & Build**:
   ```bash
-  npm run build
+  bun run build
   ```
 - **Backend Unit Tests**:
   ```bash
@@ -48,6 +48,6 @@ Quick Rec is a minimal, fast region screen recorder with a built-in History Vaul
 
 A task or feature is complete when:
 1. `cargo test` passes in `src-tauri` with zero test failures or regressions.
-2. `npm run build` compiles clean without TypeScript or Vite errors.
+2. `bun run build` compiles clean without TypeScript or Vite errors.
 3. `./build.sh` finishes with exit code 0.
 4. Git commits follow conventional commits format (`feat(...)`, `fix(...)`, `refactor(...)`) in English.
