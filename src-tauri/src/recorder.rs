@@ -174,6 +174,7 @@ impl Recorder {
         // Spawn visual overlay if present
         let overlay_process = {
             let candidates = [
+                std::env::current_dir().ok().map(|d| d.join("scripts/quick-rec-overlay")),
                 dirs::home_dir().map(|h| h.join(".local/bin/quick-rec-overlay")),
                 dirs::home_dir().map(|h| h.join(".local/bin/rec-overlay.py")),
                 Some(PathBuf::from("/usr/bin/quick-rec-overlay")),
