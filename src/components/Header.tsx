@@ -1,4 +1,4 @@
-import { Video, Search, Trash2, X } from "lucide-react";
+import { Video, Search, Trash2, X, Square, Maximize2 } from "lucide-react";
 import { useVault } from "../context/VaultContext";
 import { formatBytes } from "../utils/format";
 
@@ -61,26 +61,41 @@ export function Header() {
         )}
 
         {/* Record CTA Button */}
-        <button
-          onClick={actions.toggleRecord}
-          className={`relative isolate flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm select-none ${
-            state.isRecording
-              ? "bg-red-600 hover:bg-red-700 text-white border border-red-500 animate-pulse"
-              : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
-          }`}
-        >
-          <span
-            className={`w-2 h-2 rounded-full ${
-              state.isRecording ? "bg-white" : "bg-red-500"
-            }`}
-          />
-          <span key={state.isRecording ? "rec-active" : "rec-idle"}>
-            {state.isRecording ? "Stop Recording" : "Record Region"}
-          </span>
-          <kbd className="ml-1 px-1 py-0.5 text-[10px] bg-black/40 rounded text-zinc-300 font-mono">
-            Super+Shift+R
-          </kbd>
-        </button>
+        {state.isRecording ? (
+          <button
+            onClick={actions.toggleRecord}
+            className="relative isolate flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 hover:bg-red-700 text-white border border-red-500 animate-pulse transition shadow-sm select-none"
+          >
+            <Square className="w-2.5 h-2.5 fill-white text-white" />
+            <span key="rec-stop">Stop Recording</span>
+            <kbd className="ml-1 px-1 py-0.5 text-[10px] bg-black/40 rounded text-zinc-200 font-mono">
+              Super+Shift+R
+            </kbd>
+          </button>
+        ) : (
+          <div className="inline-flex rounded-lg border border-zinc-700 bg-zinc-800 p-0.5 shadow-sm">
+            <button
+              onClick={actions.toggleRecord}
+              className="relative isolate flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-zinc-200 hover:bg-zinc-700 hover:text-white transition select-none"
+            >
+              <span className="w-2 h-2 rounded-full bg-red-500" />
+              <span>Record Region</span>
+              <kbd className="ml-1 px-1 py-0.5 text-[10px] bg-black/40 rounded text-zinc-300 font-mono">
+                Super+Shift+R
+              </kbd>
+            </button>
+            <button
+              onClick={actions.toggleRecordFullscreen}
+              className="relative isolate flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-zinc-200 hover:bg-zinc-700 hover:text-white transition select-none border-l border-zinc-700/60"
+            >
+              <Maximize2 className="w-3 h-3 text-zinc-400" />
+              <span>Fullscreen</span>
+              <kbd className="ml-1 px-1 py-0.5 text-[10px] bg-black/40 rounded text-zinc-300 font-mono">
+                Super+Shift+F
+              </kbd>
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

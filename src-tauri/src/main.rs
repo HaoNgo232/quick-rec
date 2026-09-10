@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use quick_rec_lib::deskboard::Deskboard;
-use quick_rec_lib::recorder::Recorder;
+use quick_rec_lib::recorder::{Rect, Recorder};
 use quick_rec_lib::vault::{ClipRecord, Vault};
 use std::io::{Read, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
@@ -94,26 +94,39 @@ fn toggle_record(app: AppHandle, state: State<AppState>) -> Result<bool, String>
     handle_toggle_record(&app, &state.recorder, &state.vault)
 }
 
+#[tauri::command]
+fn toggle_record_fullscreen(app: AppHandle, state: State<AppState>) -> Result<bool, String> {
+    handle_toggle_record_fullscreen(&app, &state.recorder, &state.vault)
+}
+
+fn stop_recording(
+    app: &AppHandle,
+    recorder: &Arc<Recorder>,
+    vault: &Arc<Vault>,
+) -> Result<bool, String> {
+    let (output_file, duration_ms, rect, file_size) =
+        recorder.stop().map_err(|e| e.to_string())?;
+    Deskboard::play_sound_stop();
+    let path_str = output_file.to_string_lossy().to_string();
+    let _ = Deskboard::copy_path(&path_str);
+    let _ = vault.save(&path_str, duration_ms, rect.width, rect.height, file_size);
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.show();
+        let _ = win.set_focus();
+    }
+
+    let _ = app.emit("recording-status-changed", false);
+    let _ = app.emit("recordings-updated", ());
+    Ok(false)
+}
+
 fn handle_toggle_record(
     app: &AppHandle,
     recorder: &Arc<Recorder>,
     vault: &Arc<Vault>,
 ) -> Result<bool, String> {
     if recorder.is_recording() {
-        let (output_file, duration_ms, rect, file_size) =
-            recorder.stop().map_err(|e| e.to_string())?;
-        Deskboard::play_sound_stop();
-        let path_str = output_file.to_string_lossy().to_string();
-        let _ = Deskboard::copy_path(&path_str);
-        let _ = vault.save(&path_str, duration_ms, rect.width, rect.height, file_size);
-        if let Some(win) = app.get_webview_window("main") {
-            let _ = win.show();
-            let _ = win.set_focus();
-        }
-
-        let _ = app.emit("recording-status-changed", false);
-        let _ = app.emit("recordings-updated", ());
-        Ok(false)
+        stop_recording(app, recorder, vault)
     } else {
         if let Some(win) = app.get_webview_window("main") {
             let _ = win.hide();
@@ -147,14 +160,58 @@ fn handle_toggle_record(
     }
 }
 
+fn handle_toggle_record_fullscreen(
+    app: &AppHandle,
+    recorder: &Arc<Recorder>,
+    vault: &Arc<Vault>,
+) -> Result<bool, String> {
+    if recorder.is_recording() {
+        stop_recording(app, recorder, vault)
+    } else {
+        if let Some(win) = app.get_webview_window("main") {
+            let _ = win.hide();
+        }
+
+        let (width, height) = if let Ok(Some(monitor)) = app.primary_monitor() {
+            let size = monitor.size();
+            (size.width, size.height)
+        } else {
+            (1920, 1080)
+        };
+        let rect = Rect::new(0, 0, width, height).normalized();
+
+        let video_dir = dirs::video_dir()
+            .unwrap_or_else(|| dirs::home_dir().map(|h| h.join("Videos")).unwrap_or_default())
+            .join("quick-rec");
+        let _ = std::fs::create_dir_all(&video_dir);
+        let filename = format!("clip_{}.mp4", chrono::Local::now().format("%Y%m%d_%H%M%S"));
+        let output_file = video_dir.join(filename);
+
+        recorder
+            .start(rect, &output_file)
+            .map_err(|e| e.to_string())?;
+        Deskboard::play_sound_start();
+        let _ = app.emit("recording-status-changed", true);
+        Ok(true)
+    }
+}
+
 fn main() {
     let runtime_dir = dirs::runtime_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
     let sock_path = runtime_dir.join(format!("quick-rec-{}.sock", unsafe { libc::getuid() }));
 
+    let is_fullscreen = std::env::args().any(|a| a == "--fullscreen");
+    let is_toggle = std::env::args().any(|a| a == "--toggle");
+
     // 1. Single Instance Check via Unix Domain Socket
     if let Ok(mut stream) = UnixStream::connect(&sock_path) {
-        let is_toggle = std::env::args().any(|a| a == "--toggle");
-        let msg = if is_toggle { "toggle\n" } else { "show\n" };
+        let msg = if is_fullscreen {
+            "toggle-fullscreen\n"
+        } else if is_toggle {
+            "toggle\n"
+        } else {
+            "show\n"
+        };
         let _ = stream.write_all(msg.as_bytes());
         return;
     }
@@ -176,7 +233,6 @@ fn main() {
         vault: vault.clone(),
     };
 
-    let is_toggle = std::env::args().any(|a| a == "--toggle");
     let recorder_sock = recorder.clone();
     let vault_sock = vault.clone();
     let recorder_init = recorder.clone();
@@ -194,6 +250,7 @@ fn main() {
             reveal_file_in_folder,
             is_recording,
             toggle_record,
+            toggle_record_fullscreen,
             get_video_data
         ])
         .setup(move |app| {
@@ -206,7 +263,9 @@ fn main() {
                         let mut buf = [0u8; 32];
                         if let Ok(n) = s.read(&mut buf) {
                             let cmd = String::from_utf8_lossy(&buf[..n]);
-                            if cmd.starts_with("toggle") {
+                            if cmd.starts_with("toggle-fullscreen") {
+                                let _ = handle_toggle_record_fullscreen(&app_handle, &recorder_sock, &vault_sock);
+                            } else if cmd.starts_with("toggle") {
                                 let _ = handle_toggle_record(&app_handle, &recorder_sock, &vault_sock);
                             } else if cmd.starts_with("show") {
                                 if let Some(win) = app_handle.get_webview_window("main") {
@@ -221,10 +280,11 @@ fn main() {
 
             // 3. Setup System Tray
             let toggle_item = MenuItem::with_id(app, "toggle_rec", "Record Region (Super+Shift+R)", true, None::<&str>)?;
+            let toggle_fs_item = MenuItem::with_id(app, "toggle_fullscreen", "Record Fullscreen (Super+Shift+F)", true, None::<&str>)?;
             let history_item = MenuItem::with_id(app, "open_history", "History Vault", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit Quick Rec", true, None::<&str>)?;
 
-            let tray_menu = Menu::with_items(app, &[&toggle_item, &history_item, &quit_item])?;
+            let tray_menu = Menu::with_items(app, &[&toggle_item, &toggle_fs_item, &history_item, &quit_item])?;
 
             let img = image::load_from_memory(include_bytes!("../icons/32x32.png"))
                 .expect("Failed to load 32x32 tray icon");
@@ -240,6 +300,10 @@ fn main() {
                     "toggle_rec" => {
                         let state = app.state::<AppState>();
                         let _ = handle_toggle_record(app, &state.recorder, &state.vault);
+                    }
+                    "toggle_fullscreen" => {
+                        let state = app.state::<AppState>();
+                        let _ = handle_toggle_record_fullscreen(app, &state.recorder, &state.vault);
                     }
                     "open_history" => {
                         if let Some(win) = app.get_webview_window("main") {
@@ -267,14 +331,23 @@ fn main() {
                 })
                 .build(app)?;
 
-            // 4. Register Global Shortcut: Super+Shift+R
-            let shortcut = "Super+Shift+R".parse::<Shortcut>().expect("Invalid shortcut format");
-            let app_handle_sc = app.handle().clone();
-            let recorder_sc = recorder.clone();
-            let vault_sc = vault.clone();
+            // 4. Register Global Shortcuts: Super+Shift+R & Super+Shift+F
+            let shortcut_r = "Super+Shift+R".parse::<Shortcut>().expect("Invalid shortcut format");
+            let app_handle_r = app.handle().clone();
+            let recorder_r = recorder.clone();
+            let vault_r = vault.clone();
 
-            let _ = app.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, _event| {
-                let _ = handle_toggle_record(&app_handle_sc, &recorder_sc, &vault_sc);
+            let _ = app.global_shortcut().on_shortcut(shortcut_r, move |_app, _shortcut, _event| {
+                let _ = handle_toggle_record(&app_handle_r, &recorder_r, &vault_r);
+            });
+
+            let shortcut_f = "Super+Shift+F".parse::<Shortcut>().expect("Invalid shortcut format");
+            let app_handle_f = app.handle().clone();
+            let recorder_f = recorder.clone();
+            let vault_f = vault.clone();
+
+            let _ = app.global_shortcut().on_shortcut(shortcut_f, move |_app, _shortcut, _event| {
+                let _ = handle_toggle_record_fullscreen(&app_handle_f, &recorder_f, &vault_f);
             });
 
             // 5. Intercept main window close event so it minimizes to tray instead of quitting
@@ -286,8 +359,15 @@ fn main() {
                         let _ = win_clone.hide();
                     }
                 });
-                // Ensure window is shown only on normal launch, or toggle record if launched with --toggle
-                if is_toggle {
+                // Ensure window is shown only on normal launch, or toggle record if launched with --fullscreen or --toggle
+                if is_fullscreen {
+                    let app_handle_init = app.handle().clone();
+                    let recorder_fs = recorder_init.clone();
+                    let vault_fs = vault_init.clone();
+                    std::thread::spawn(move || {
+                        let _ = handle_toggle_record_fullscreen(&app_handle_init, &recorder_fs, &vault_fs);
+                    });
+                } else if is_toggle {
                     let app_handle_init = app.handle().clone();
                     std::thread::spawn(move || {
                         let _ = handle_toggle_record(&app_handle_init, &recorder_init, &vault_init);
