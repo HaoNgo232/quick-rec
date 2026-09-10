@@ -20,9 +20,18 @@ function useClipCard(): ClipCardContextValue {
 }
 
 function ClipCardRoot({ clip, children }: { clip: ClipRecord; children: React.ReactNode }) {
+  const { state } = useVault();
+  const isNewlyRecorded = state.newlyRecordedId === clip.id;
+
   return (
     <ClipCardContext.Provider value={{ clip }}>
-      <div className="group relative flex flex-col rounded-xl border border-zinc-800/80 bg-zinc-900/50 hover:bg-zinc-900 hover:border-zinc-700 transition shadow-sm overflow-hidden">
+      <div
+        className={`group relative flex flex-col rounded-xl border bg-zinc-900/50 hover:bg-zinc-900 hover:border-zinc-700 transition shadow-sm overflow-hidden ${
+          isNewlyRecorded
+            ? "border-red-500/80 ring-2 ring-red-500/80 shadow-lg shadow-red-950/40 animate-pulse"
+            : "border-zinc-800/80"
+        }`}
+      >
         {children}
       </div>
     </ClipCardContext.Provider>

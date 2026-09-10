@@ -1,4 +1,4 @@
-import { Video, Search, Trash2 } from "lucide-react";
+import { Video, Search, Trash2, X } from "lucide-react";
 import { useVault } from "../context/VaultContext";
 import { formatBytes } from "../utils/format";
 
@@ -24,14 +24,23 @@ export function Header() {
       {/* Search Input */}
       <div className="flex-1 max-w-xs mx-4">
         <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
           <input
             type="text"
             value={state.searchQuery}
             onChange={(e) => actions.setSearchQuery(e.target.value)}
             placeholder="Search recordings..."
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 transition-colors"
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-8 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 transition-colors"
           />
+          {state.searchQuery && (
+            <button
+              onClick={() => actions.setSearchQuery("")}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 p-0.5 rounded bg-zinc-800 hover:bg-zinc-700 transition relative isolate"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -40,7 +49,7 @@ export function Header() {
         {state.records.length > 0 && (
           <button
             onClick={actions.clearVault}
-            title={`Delete all recordings and free up ${formatBytes(state.totalSizeBytes)}`}
+            title={`Clear vault and free up ${formatBytes(state.totalSizeBytes)} (5s undo available)`}
             className="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-zinc-800 hover:border-red-500/30 transition shadow-sm select-none"
           >
             <Trash2 className="w-3.5 h-3.5 text-zinc-400 group-hover:text-red-400 transition-colors" />
