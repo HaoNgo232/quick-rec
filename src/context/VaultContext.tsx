@@ -26,6 +26,7 @@ export interface VaultState {
 export interface VaultActions {
   setSearchQuery: (query: string) => void;
   toggleRecord: () => Promise<void>;
+  toggleRecordFullscreen: () => Promise<void>;
   copyPath: (clip: ClipRecord) => Promise<void>;
   openFile: (clip: ClipRecord) => Promise<void>;
   deleteRecord: (id: number) => Promise<void>;
@@ -198,6 +199,15 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const toggleRecordFullscreen = async () => {
+    try {
+      const isNowRec = await invoke<boolean>("toggle_record_fullscreen");
+      setIsRecording(isNowRec);
+    } catch (err) {
+      console.error("Toggle fullscreen record failed:", err);
+    }
+  };
+
   const copyPath = async (clip: ClipRecord) => {
     try {
       await invoke("copy_path", { path: clip.filePath });
@@ -341,6 +351,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     actions: {
       setSearchQuery,
       toggleRecord,
+      toggleRecordFullscreen,
       copyPath,
       openFile,
       deleteRecord,
