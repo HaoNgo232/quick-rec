@@ -48,7 +48,7 @@ export function VaultGrid() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-      {records.map((clip) => (
+      {filteredRecords.map((clip) => (
         <ClipCard.Root key={clip.id} clip={clip}>
           <ClipCard.Thumbnail onPreview={() => actions.setPreviewClip(clip)} />
           <div className="p-3 flex flex-col flex-1 justify-between gap-2.5">
