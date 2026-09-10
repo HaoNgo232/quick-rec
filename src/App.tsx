@@ -2,6 +2,7 @@ import { VaultProvider } from "./context/VaultContext";
 import { Header } from "./components/Header";
 import { VaultGrid } from "./components/VaultGrid";
 import { PreviewModal } from "./components/PreviewModal";
+import { Toast } from "./components/Toast";
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
           <VaultGrid />
         </main>
         <PreviewModal />
+        <Toast />
       </div>
     </VaultProvider>
   );

@@ -1,10 +1,10 @@
-import { Sparkles } from "lucide-react";
+import { Sparkles, SearchX } from "lucide-react";
 import { useVault } from "../context/VaultContext";
 import { ClipCard } from "./ClipCard";
 
 export function VaultGrid() {
   const { state, actions } = useVault();
-  const records = state.filteredRecords;
+  const { records, filteredRecords, searchQuery } = state;
 
   if (records.length === 0) {
     return (
@@ -20,6 +20,28 @@ export function VaultGrid() {
           </kbd>{" "}
           to select a region and record your first clip!
         </p>
+      </div>
+    );
+  }
+
+  if (filteredRecords.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center py-16">
+        <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-3">
+          <SearchX className="w-5 h-5 text-zinc-500" />
+        </div>
+        <p className="text-sm font-medium text-zinc-300">
+          No recordings found for &ldquo;{searchQuery}&rdquo;
+        </p>
+        <p className="text-xs text-zinc-500 mt-1 max-w-sm">
+          Try searching with a different term or date.
+        </p>
+        <button
+          onClick={() => actions.setSearchQuery("")}
+          className="mt-4 px-3 py-1.5 text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-lg transition"
+        >
+          Clear Search
+        </button>
       </div>
     );
   }
