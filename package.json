@@ -2,6 +2,7 @@
   "name": "quick-rec",
   "private": true,
   "version": "1.0.0",
+  "description": "Minimal region screen recorder with clipboard integration and local History Vault.",
   "type": "module",
   "scripts": {
     "dev": "vite",
