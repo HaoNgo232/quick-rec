@@ -17,7 +17,22 @@ DEB_FILE="${DIR}/dist/quick-rec_${VERSION}_all.deb"
 
 # Build if package does not exist
 if [ ! -f "$DEB_FILE" ]; then
-    echo "==> Package not found, building first..."
+    echo "==> Package not found, building from source..."
+    MISSING_DEPS=()
+    if ! command -v bun >/dev/null 2>&1; then
+        MISSING_DEPS+=("bun (https://bun.sh)")
+    fi
+    if ! command -v cargo >/dev/null 2>&1; then
+        MISSING_DEPS+=("cargo / rust (https://rustup.rs)")
+    fi
+    if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+        echo "Error: Missing required build dependencies to build quick-rec from source:"
+        for dep in "${MISSING_DEPS[@]}"; do
+            echo "  - $dep"
+        done
+        echo "Please install them or install a pre-built package."
+        exit 1
+    fi
     "${DIR}/build.sh"
 fi
 

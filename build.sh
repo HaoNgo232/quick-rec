@@ -6,8 +6,14 @@ VERSION="1.0.0"
 PKG_DIR="${DIR}/build/quick-rec_${VERSION}_all"
 DIST_DIR="${DIR}/dist"
 
+# Ensure frontend dependencies are installed
+if [ ! -d "${DIR}/node_modules" ] || [ ! -f "${DIR}/node_modules/.bin/tauri" ]; then
+    echo "==> Installing frontend dependencies with Bun..."
+    (cd "${DIR}" && bun install)
+fi
+
 echo "==> Building Frontend & Tauri Release Binary with Tauri CLI..."
-bunx tauri build --no-bundle
+(cd "${DIR}" && bun run tauri build --no-bundle)
 
 echo "==> Packaging quick-rec version ${VERSION}..."
 rm -rf "${PKG_DIR}"
